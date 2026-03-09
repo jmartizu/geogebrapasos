@@ -3,254 +3,310 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>GeoGebra por pasos - Castillo</title>
+<title>GeoGebra por pasos - Construcción geométrica</title>
 <style>
-body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f7fb}
-.app{max-width:1200px;margin:auto;padding:20px}
-.layout{display:grid;grid-template-columns:320px 1fr;gap:20px}
-.panel{background:white;border-radius:16px;border:1px solid #dbe3ee;padding:16px}
-button{padding:10px 14px;border-radius:10px;border:none;font-weight:600;cursor:pointer}
-.primary{background:#2563eb;color:white}
-.secondary{background:#e5e7eb}
-.progress{height:10px;background:#e5e7eb;border-radius:6px;margin-top:6px}
-.progress div{height:100%;background:#2563eb;border-radius:6px;width:0%}
-svg{width:100%;height:520px;background:white}
-.step-list{max-height:420px;overflow:auto}
+  body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f7fb;color:#111827}
+  .app{max-width:1200px;margin:auto;padding:20px}
+  .layout{display:grid;grid-template-columns:320px 1fr;gap:20px}
+  .panel{background:#fff;border-radius:16px;border:1px solid #dbe3ee;padding:16px;box-shadow:0 6px 20px rgba(15,23,42,.05)}
+  h1{margin:0 0 10px}
+  p{line-height:1.5}
+  button{padding:10px 14px;border-radius:10px;border:none;font-weight:600;cursor:pointer;margin-right:8px;margin-bottom:8px}
+  .primary{background:#2563eb;color:#fff}
+  .secondary{background:#e5e7eb}
+  .progress{height:10px;background:#e5e7eb;border-radius:6px;margin-top:6px;overflow:hidden}
+  .progress div{height:100%;background:#2563eb;border-radius:6px;width:0%}
+  svg{width:100%;height:520px;background:#fff;display:block}
+  .step-list{max-height:420px;overflow:auto;display:grid;gap:6px}
+  .step-list button{width:100%;text-align:left;background:#f8fafc;border:1px solid #e5e7eb}
+  .step-list button.active{background:#dbeafe;border-color:#93c5fd}
+  .meta{font-size:14px;color:#4b5563}
+  @media (max-width: 900px){.layout{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="app">
-<h1>Construcción guiada en GeoGebra</h1>
-<p>Sigue los pasos y reproduce la construcción en GeoGebra. El resultado final será un castillo.</p>
+  <h1>Construcción guiada en GeoGebra</h1>
+  <p>Sigue los pasos y reproduce la construcción en GeoGebra. Intenta descubrir qué figura aparece al final.</p>
 
-<div class="layout">
+  <div class="layout">
+    <div class="panel">
+      <h3>Pasos</h3>
+      <div id="stepList" class="step-list"></div>
 
-<div class="panel">
-<h3>Pasos</h3>
-<div id="stepList" class="step-list"></div>
+      <div style="margin-top:20px">
+        <button class="secondary" id="prevBtn">Anterior</button>
+        <button class="primary" id="nextBtn">Siguiente</button>
+      </div>
 
-<div style="margin-top:20px">
-<button class="secondary" id="prevBtn">Anterior</button>
-<button class="primary" id="nextBtn">Siguiente</button>
-</div>
+      <div style="margin-top:16px">
+        Paso <span id="progressText">1</span> de 50
+        <div class="progress"><div id="progressFill"></div></div>
+      </div>
+    </div>
 
-<div style="margin-top:16px">
-Paso <span id="progressText">1</span> de 50
-<div class="progress"><div id="progressFill"></div></div>
-</div>
-</div>
-
-<div class="panel">
-<h2 id="stepTitle"></h2>
-<p id="instruction"></p>
-<svg id="scene" viewBox="0 0 900 520"></svg>
-</div>
-
-</div>
+    <div class="panel">
+      <h2 id="stepTitle"></h2>
+      <p id="instruction"></p>
+      <div class="meta" id="stepMeta"></div>
+      <svg id="scene" viewBox="0 0 900 520" aria-label="Plano cartesiano estilo GeoGebra"></svg>
+    </div>
+  </div>
 </div>
 
 <script>
+  const steps = [
+    { t: 'A', i: 'Crear el punto A = (0,0)' },
+    { t: 'B', i: 'Crear el punto B = (14,0)' },
+    { t: 'Base', i: 'Dibujar el segmento AB' },
+    { t: 'D', i: 'Crear el punto D = (0,7)' },
+    { t: 'C', i: 'Crear el punto C = (14,7)' },
+    { t: 'Pared izquierda', i: 'Dibujar el segmento A-D' },
+    { t: 'Pared derecha', i: 'Dibujar el segmento B-C' },
+    { t: 'Muralla', i: 'Dibujar el segmento D-C' },
+    { t: 'Torre izq.', i: 'Crear E = (2,10)' },
+    { t: 'Torre izq.', i: 'Dibujar el segmento D-E' },
+    { t: 'Torre izq.', i: 'Crear F = (4,10)' },
+    { t: 'Torre izq.', i: 'Dibujar el segmento E-F' },
+    { t: 'Torre izq.', i: 'Dibujar el segmento F-D' },
+    { t: 'Torre der.', i: 'Crear G = (10,10)' },
+    { t: 'Torre der.', i: 'Dibujar el segmento C-G' },
+    { t: 'Torre der.', i: 'Crear H = (12,10)' },
+    { t: 'Torre der.', i: 'Dibujar el segmento G-H' },
+    { t: 'Torre der.', i: 'Dibujar el segmento H-C' },
+    { t: 'Almena', i: 'Dibujar el segmento (4,7)-(5,8)' },
+    { t: 'Almena', i: 'Dibujar el segmento (5,8)-(6,7)' },
+    { t: 'Almena', i: 'Dibujar el segmento (6,7)-(7,8)' },
+    { t: 'Almena', i: 'Dibujar el segmento (7,8)-(8,7)' },
+    { t: 'Almena', i: 'Dibujar el segmento (8,7)-(9,8)' },
+    { t: 'Almena', i: 'Dibujar el segmento (9,8)-(10,7)' },
+    { t: 'Puerta', i: 'Crear P = (6,0)' },
+    { t: 'Puerta', i: 'Crear Q = (8,0)' },
+    { t: 'Puerta', i: 'Crear R = (6,4)' },
+    { t: 'Puerta', i: 'Crear S = (8,4)' },
+    { t: 'Puerta', i: 'Dibujar el segmento P-R' },
+    { t: 'Puerta', i: 'Dibujar el segmento Q-S' },
+    { t: 'Puerta', i: 'Dibujar el segmento R-S' },
+    { t: 'Ventana izq.', i: 'Crear W1 = (3,5)' },
+    { t: 'Ventana izq.', i: 'Crear W2 = (4,5)' },
+    { t: 'Ventana izq.', i: 'Crear W3 = (3,6)' },
+    { t: 'Ventana izq.', i: 'Crear W4 = (4,6)' },
+    { t: 'Ventana izq.', i: 'Dibujar el segmento W1-W2' },
+    { t: 'Ventana izq.', i: 'Dibujar el segmento W3-W4' },
+    { t: 'Ventana izq.', i: 'Dibujar el segmento W1-W3' },
+    { t: 'Ventana izq.', i: 'Dibujar el segmento W2-W4' },
+    { t: 'Ventana der.', i: 'Crear V1 = (10,5)' },
+    { t: 'Ventana der.', i: 'Crear V2 = (11,5)' },
+    { t: 'Ventana der.', i: 'Crear V3 = (10,6)' },
+    { t: 'Ventana der.', i: 'Crear V4 = (11,6)' },
+    { t: 'Ventana der.', i: 'Dibujar el segmento V1-V2' },
+    { t: 'Ventana der.', i: 'Dibujar el segmento V3-V4' },
+    { t: 'Ventana der.', i: 'Dibujar el segmento V1-V3' },
+    { t: 'Ventana der.', i: 'Dibujar el segmento V2-V4' },
+    { t: 'Bandera', i: 'Crear T = (12,11)' },
+    { t: 'Bandera', i: 'Dibujar el segmento (12,10)-(12,11)' },
+    { t: 'Figura final', i: 'Observa la construcción completa. La figura formada es un castillo.' }
+  ];
 
-const steps=[
-{t:"A",i:"Crear el punto A = (0,0)"},
-{t:"B",i:"Crear el punto B = (14,0)"},
-{t:"Base",i:"Dibujar el segmento AB"},
-{t:"D",i:"Crear el punto D = (0,7)"},
-{t:"C",i:"Crear el punto C = (14,7)"},
-{t:"Pared izquierda",i:"Segmento A-D"},
-{t:"Pared derecha",i:"Segmento B-C"},
-{t:"Muralla",i:"Segmento D-C"},
-{t:"Torre izq punto",i:"Crear E = (2,10)"},
-{t:"Torre izq",i:"Segmento D-E"},
-{t:"Torre izq punto",i:"Crear F = (4,10)"},
-{t:"Torre izq",i:"Segmento E-F"},
-{t:"Torre izq",i:"Segmento F-D"},
-{t:"Torre der punto",i:"Crear G = (10,10)"},
-{t:"Torre der",i:"Segmento C-G"},
-{t:"Torre der punto",i:"Crear H = (12,10)"},
-{t:"Torre der",i:"Segmento G-H"},
-{t:"Torre der",i:"Segmento H-C"},
-{t:"Almena",i:"Segmento (4,7)-(5,8)"},
-{t:"Almena",i:"Segmento (5,8)-(6,7)"},
-{t:"Almena",i:"Segmento (6,7)-(7,8)"},
-{t:"Almena",i:"Segmento (7,8)-(8,7)"},
-{t:"Almena",i:"Segmento (8,7)-(9,8)"},
-{t:"Almena",i:"Segmento (9,8)-(10,7)"},
-{t:"Puerta punto",i:"Crear P = (6,0)"},
-{t:"Puerta punto",i:"Crear Q = (8,0)"},
-{t:"Puerta punto",i:"Crear R = (6,4)"},
-{t:"Puerta punto",i:"Crear S = (8,4)"},
-{t:"Puerta",i:"Segmento P-R"},
-{t:"Puerta",i:"Segmento Q-S"},
-{t:"Puerta",i:"Segmento R-S"},
-{t:"Ventana",i:"Crear W1 = (3,5)"},
-{t:"Ventana",i:"Crear W2 = (4,5)"},
-{t:"Ventana",i:"Crear W3 = (3,6)"},
-{t:"Ventana",i:"Crear W4 = (4,6)"},
-{t:"Ventana",i:"Segmento W1-W2"},
-{t:"Ventana",i:"Segmento W3-W4"},
-{t:"Ventana",i:"Segmento W1-W3"},
-{t:"Ventana",i:"Segmento W2-W4"},
-{t:"Ventana",i:"Crear V1 = (10,5)"},
-{t:"Ventana",i:"Crear V2 = (11,5)"},
-{t:"Ventana",i:"Crear V3 = (10,6)"},
-{t:"Ventana",i:"Crear V4 = (11,6)"},
-{t:"Ventana",i:"Segmento V1-V2"},
-{t:"Ventana",i:"Segmento V3-V4"},
-{t:"Ventana",i:"Segmento V1-V3"},
-{t:"Ventana",i:"Segmento V2-V4"},
-{t:"Bandera",i:"Crear T = (12,11)"},
-{t:"Bandera",i:"Segmento (12,10)-(12,11)"},
-{t:"Bandera",i:"Segmento (12,11)-(13,10.5)"}
-]
+  const TOTAL_STEPS = 50;
+  let currentStep = 0;
 
-while(steps.length<50)steps.push({t:"Construcción",i:"Continúa observando la figura."})
+  const stepTitle = document.getElementById('stepTitle');
+  const instruction = document.getElementById('instruction');
+  const stepMeta = document.getElementById('stepMeta');
+  const progressText = document.getElementById('progressText');
+  const progressFill = document.getElementById('progressFill');
+  const stepList = document.getElementById('stepList');
+  const scene = document.getElementById('scene');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
 
-let currentStep=0
+  const originX = 150;
+  const originY = 420;
+  const scale = 35;
 
-const stepTitle=document.getElementById("stepTitle")
-const instruction=document.getElementById("instruction")
-const progressText=document.getElementById("progressText")
-const progressFill=document.getElementById("progressFill")
-const stepList=document.getElementById("stepList")
-const scene=document.getElementById("scene")
+  function X(x) { return originX + x * scale; }
+  function Y(y) { return originY - y * scale; }
 
-const prevBtn=document.getElementById("prevBtn")
-const nextBtn=document.getElementById("nextBtn")
+  function grid() {
+    let g = '';
 
-const originX=150
-const originY=420
-const scale=35
+    for (let i = 0; i < 900; i += scale) {
+      g += `<line x1="${i}" y1="0" x2="${i}" y2="520" stroke="#e5e7eb"/>`;
+    }
+    for (let i = 0; i < 520; i += scale) {
+      g += `<line x1="0" y1="${i}" x2="900" y2="${i}" stroke="#e5e7eb"/>`;
+    }
 
-function X(x){return originX+x*scale}
-function Y(y){return originY-y*scale}
+    g += `<line x1="0" y1="${originY}" x2="900" y2="${originY}" stroke="#000" stroke-width="2"/>`;
+    g += `<line x1="${originX}" y1="0" x2="${originX}" y2="520" stroke="#000" stroke-width="2"/>`;
 
-function grid(){
-let g=""
+    for (let i = 0; i <= 20; i++) {
+      const x = X(i);
+      if (x > 0 && x < 900) {
+        g += `<line x1="${x}" y1="${originY - 4}" x2="${x}" y2="${originY + 4}" stroke="#000"/>`;
+        g += `<text x="${x - 4}" y="${originY + 16}" font-size="12" fill="#000">${i}</text>`;
+      }
+    }
 
-// cuadrícula
-for(let i=0;i<900;i+=scale){
- g+=`<line x1="${i}" y1="0" x2="${i}" y2="520" stroke="#e5e7eb"/>`
-}
-for(let i=0;i<520;i+=scale){
- g+=`<line x1="0" y1="${i}" x2="900" y2="${i}" stroke="#e5e7eb"/>`
-}
+    for (let i = 0; i <= 15; i++) {
+      const y = Y(i);
+      if (y > 0 && y < 520) {
+        g += `<line x1="${originX - 4}" y1="${y}" x2="${originX + 4}" y2="${y}" stroke="#000"/>`;
+        g += `<text x="${originX - 18}" y="${y + 4}" font-size="12" fill="#000">${i}</text>`;
+      }
+    }
 
-// ejes
- g+=`<line x1="0" y1="${originY}" x2="900" y2="${originY}" stroke="#000" stroke-width="2"/>`
- g+=`<line x1="${originX}" y1="0" x2="${originX}" y2="520" stroke="#000" stroke-width="2"/>`
+    g += `<text x="${originX + 690}" y="${originY - 8}" font-size="14" fill="#000">x</text>`;
+    g += `<text x="${originX + 8}" y="18" font-size="14" fill="#000">y</text>`;
+    return g;
+  }
 
-// números eje X
-for(let i=0;i<=20;i++){
- let x=X(i)
- if(x>0 && x<900){
-  g+=`<text x="${x-4}" y="${originY+15}" font-size="12" fill="#000">${i}</text>`
- }
-}
+  function draw() {
+    const s = currentStep + 1;
+    let svg = grid();
 
-// números eje Y
-for(let i=0;i<=15;i++){
- let y=Y(i)
- if(y>0 && y<520){
-  g+=`<text x="${originX-18}" y="${y+4}" font-size="12" fill="#000">${i}</text>`
- }
-}
+    function p(x, y) {
+      svg += `<circle cx="${X(x)}" cy="${Y(y)}" r="4" fill="#111827" data-x="${x}" data-y="${y}"/>`;
+    }
 
-return g
-}
+    function l(x1, y1, x2, y2) {
+      svg += `<line x1="${X(x1)}" y1="${Y(y1)}" x2="${X(x2)}" y2="${Y(y2)}" stroke="#111827" stroke-width="2" data-x1="${x1}" data-y1="${y1}" data-x2="${x2}" data-y2="${y2}"/>`;
+    }
 
-function draw(){
-let s=currentStep+1
-let svg=grid()
+    if (s >= 1) p(0, 0);
+    if (s >= 2) p(14, 0);
+    if (s >= 3) l(0, 0, 14, 0);
 
-function p(x,y){svg+=`<circle cx="${X(x)}" cy="${Y(y)}" r="4" fill="black"/>`}
-function l(x1,y1,x2,y2){svg+=`<line x1="${X(x1)}" y1="${Y(y1)}" x2="${X(x2)}" y2="${Y(y2)}" stroke="black" stroke-width="2"/>`}
+    if (s >= 4) p(0, 7);
+    if (s >= 5) p(14, 7);
+    if (s >= 6) l(0, 0, 0, 7);
+    if (s >= 7) l(14, 0, 14, 7);
+    if (s >= 8) l(0, 7, 14, 7);
 
-if(s>=1)p(0,0)
-if(s>=2)p(14,0)
-if(s>=3)l(0,0,14,0)
+    if (s >= 9) p(2, 10);
+    if (s >= 10) l(0, 7, 2, 10);
+    if (s >= 11) p(4, 10);
+    if (s >= 12) l(2, 10, 4, 10);
+    if (s >= 13) l(4, 10, 4, 7);
 
-if(s>=4)p(0,7)
-if(s>=5)p(14,7)
-if(s>=6)l(0,0,0,7)
-if(s>=7)l(14,0,14,7)
-if(s>=8)l(0,7,14,7)
+    if (s >= 14) p(10, 10);
+    if (s >= 15) l(14, 7, 10, 10);
+    if (s >= 16) p(12, 10);
+    if (s >= 17) l(10, 10, 12, 10);
+    if (s >= 18) l(12, 10, 12, 7);
 
-if(s>=9)p(2,10)
-if(s>=10)l(0,7,2,10)
-if(s>=11)p(4,10)
-if(s>=12)l(2,10,4,10)
-if(s>=13)l(4,10,4,7)
+    if (s >= 19) l(4, 7, 5, 8);
+    if (s >= 20) l(5, 8, 6, 7);
+    if (s >= 21) l(6, 7, 7, 8);
+    if (s >= 22) l(7, 8, 8, 7);
+    if (s >= 23) l(8, 7, 9, 8);
+    if (s >= 24) l(9, 8, 10, 7);
 
-if(s>=14)p(10,10)
-if(s>=15)l(14,7,10,10)
-if(s>=16)p(12,10)
-if(s>=17)l(10,10,12,10)
-if(s>=18)l(12,10,12,7)
+    if (s >= 25) p(6, 0);
+    if (s >= 26) p(8, 0);
+    if (s >= 27) p(6, 4);
+    if (s >= 28) p(8, 4);
+    if (s >= 29) l(6, 0, 6, 4);
+    if (s >= 30) l(8, 0, 8, 4);
+    if (s >= 31) l(6, 4, 8, 4);
 
-if(s>=19)l(4,7,5,8)
-if(s>=20)l(5,8,6,7)
-if(s>=21)l(6,7,7,8)
-if(s>=22)l(7,8,8,7)
-if(s>=23)l(8,7,9,8)
-if(s>=24)l(9,8,10,7)
+    if (s >= 32) p(3, 5);
+    if (s >= 33) p(4, 5);
+    if (s >= 34) p(3, 6);
+    if (s >= 35) p(4, 6);
+    if (s >= 36) l(3, 5, 4, 5);
+    if (s >= 37) l(3, 6, 4, 6);
+    if (s >= 38) l(3, 5, 3, 6);
+    if (s >= 39) l(4, 5, 4, 6);
 
-if(s>=25)p(6,0)
-if(s>=26)p(8,0)
-if(s>=27)p(6,4)
-if(s>=28)p(8,4)
-if(s>=29)l(6,0,6,4)
-if(s>=30)l(8,0,8,4)
-if(s>=31)l(6,4,8,4)
+    if (s >= 40) p(10, 5);
+    if (s >= 41) p(11, 5);
+    if (s >= 42) p(10, 6);
+    if (s >= 43) p(11, 6);
+    if (s >= 44) l(10, 5, 11, 5);
+    if (s >= 45) l(10, 6, 11, 6);
+    if (s >= 46) l(10, 5, 10, 6);
+    if (s >= 47) l(11, 5, 11, 6);
 
-if(s>=32)p(3,5)
-if(s>=33)p(4,5)
-if(s>=34)p(3,6)
-if(s>=35)p(4,6)
-if(s>=36)l(3,5,4,5)
-if(s>=37)l(3,6,4,6)
-if(s>=38)l(3,5,3,6)
-if(s>=39)l(4,5,4,6)
+    if (s >= 48) p(12, 11);
+    if (s >= 49) l(12, 10, 12, 11);
+    if (s >= 50) l(12, 11, 13, 10.5);
 
-if(s>=40)p(10,5)
-if(s>=41)p(11,5)
-if(s>=42)p(10,6)
-if(s>=43)p(11,6)
-if(s>=44)l(10,5,11,5)
-if(s>=45)l(10,6,11,6)
-if(s>=46)l(10,5,10,6)
-if(s>=47)l(11,5,11,6)
+    scene.innerHTML = svg;
+  }
 
-if(s>=48)p(12,11)
-if(s>=49)l(12,10,12,11)
-if(s>=50)l(12,11,13,10.5)
+  function renderStepList() {
+    stepList.innerHTML = '';
+    steps.forEach((step, index) => {
+      const b = document.createElement('button');
+      b.textContent = `${index + 1}. ${step.t}`;
+      b.className = index === currentStep ? 'active' : '';
+      b.addEventListener('click', () => {
+        currentStep = index;
+        render();
+      });
+      stepList.appendChild(b);
+    });
+  }
 
-scene.innerHTML=svg
-}
+  function render() {
+    const step = steps[currentStep];
+    stepTitle.textContent = step.t;
+    instruction.textContent = step.i;
+    stepMeta.textContent = `Paso ${currentStep + 1} de ${TOTAL_STEPS}`;
+    progressText.textContent = currentStep + 1;
+    progressFill.style.width = `${((currentStep + 1) / TOTAL_STEPS) * 100}%`;
+    prevBtn.disabled = currentStep === 0;
+    nextBtn.disabled = currentStep === TOTAL_STEPS - 1;
+    renderStepList();
+    draw();
+  }
 
-function render(){
-stepTitle.textContent=steps[currentStep].t
-instruction.textContent=steps[currentStep].i
-progressText.textContent=currentStep+1
-progressFill.style.width=((currentStep+1)/50*100)+"%"
-stepList.innerHTML=""
-steps.forEach((s,i)=>{
-let b=document.createElement("button")
-b.textContent=(i+1)
-b.onclick=()=>{currentStep=i;render()}
-if(i===currentStep)b.style.background="#dbeafe"
-stepList.appendChild(b)
-})
+  function runTests() {
+    function assert(condition, message) {
+      if (!condition) throw new Error(message);
+    }
 
-draw()
-}
+    assert(Array.isArray(steps), 'steps debe ser un array');
+    assert(steps.length === 50, 'deben existir exactamente 50 pasos');
+    assert(typeof render === 'function', 'render debe existir');
+    assert(typeof draw === 'function', 'draw debe existir');
+    assert(X(0) === originX, 'X(0) debe coincidir con el origen X');
+    assert(Y(0) === originY, 'Y(0) debe coincidir con el origen Y');
+    assert(X(14) - X(0) === 14 * scale, 'la escala horizontal debe ser correcta');
+    assert(Y(0) - Y(7) === 7 * scale, 'la escala vertical debe ser correcta');
 
-prevBtn.onclick=()=>{if(currentStep>0){currentStep--;render()}}
-nextBtn.onclick=()=>{if(currentStep<49){currentStep++;render()}}
+    currentStep = 0;
+    draw();
+    assert(scene.innerHTML.includes('<circle'), 'el primer paso debe dibujar al menos un punto');
 
-render()
+    currentStep = 49;
+    draw();
+    assert(scene.innerHTML.includes('data-y2="10.5"'), 'el último paso debe dibujar la bandera final');
 
+    currentStep = 0;
+    render();
+    assert(stepList.children.length === 50, 'deben renderizarse 50 botones de paso');
+    assert(progressText.textContent === '1', 'el progreso inicial debe ser 1');
+  }
+
+  prevBtn.addEventListener('click', () => {
+    if (currentStep > 0) {
+      currentStep -= 1;
+      render();
+    }
+  });
+
+  nextBtn.addEventListener('click', () => {
+    if (currentStep < TOTAL_STEPS - 1) {
+      currentStep += 1;
+      render();
+    }
+  });
+
+  render();
+  runTests();
 </script>
 </body>
 </html>
-
