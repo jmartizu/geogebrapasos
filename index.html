@@ -1,1 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GeoGebra por pasos - Castillo</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f7fb}
+.app{max-width:1200px;margin:auto;padding:20px}
+.layout{display:grid;grid-template-columns:320px 1fr;gap:20px}
+.panel{background:white;border-radius:16px;border:1px solid #dbe3ee;padding:16px}
+button{padding:10px 14px;border-radius:10px;border:none;font-weight:600;cursor:pointer}
+.primary{background:#2563eb;color:white}
+.secondary{background:#e5e7eb}
+.progress{height:10px;background:#e5e7eb;border-radius:6px;margin-top:6px}
+.progress div{height:100%;background:#2563eb;border-radius:6px;width:0%}
+svg{width:100%;height:520px;background:white}
+.step-list{max-height:420px;overflow:auto}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>Construcción guiada en GeoGebra</h1>
+<p>Sigue los pasos y reproduce la construcción en GeoGebra. El resultado final será un castillo.</p>
+
+<div class="layout">
+
+<div class="panel">
+<h3>Pasos</h3>
+<div id="stepList" class="step-list"></div>
+
+<div style="margin-top:20px">
+<button class="secondary" id="prevBtn">Anterior</button>
+<button class="primary" id="nextBtn">Siguiente</button>
+</div>
+
+<div style="margin-top:16px">
+Paso <span id="progressText">1</span> de 50
+<div class="progress"><div id="progressFill"></div></div>
+</div>
+</div>
+
+<div class="panel">
+<h2 id="stepTitle"></h2>
+<p id="instruction"></p>
+<svg id="scene" viewBox="0 0 900 520"></svg>
+</div>
+
+</div>
+</div>
+
+<script>
+
+const steps=[
+{t:"A",i:"Crear el punto A = (0,0)"},
+{t:"B",i:"Crear el punto B = (14,0)"},
+{t:"Base",i:"Dibujar el segmento AB"},
+{t:"D",i:"Crear el punto D = (0,7)"},
+{t:"C",i:"Crear el punto C = (14,7)"},
+{t:"Pared izquierda",i:"Segmento A-D"},
+{t:"Pared derecha",i:"Segmento B-C"},
+{t:"Muralla",i:"Segmento D-C"},
+{t:"Torre izq punto",i:"Crear E = (2,10)"},
+{t:"Torre izq",i:"Segmento D-E"},
+{t:"Torre izq punto",i:"Crear F = (4,10)"},
+{t:"Torre izq",i:"Segmento E-F"},
+{t:"Torre izq",i:"Segmento F-D"},
+{t:"Torre der punto",i:"Crear G = (10,10)"},
+{t:"Torre der",i:"Segmento C-G"},
+{t:"Torre der punto",i:"Crear H = (12,10)"},
+{t:"Torre der",i:"Segmento G-H"},
+{t:"Torre der",i:"Segmento H-C"},
+{t:"Almena",i:"Segmento (4,7)-(5,8)"},
+{t:"Almena",i:"Segmento (5,8)-(6,7)"},
+{t:"Almena",i:"Segmento (6,7)-(7,8)"},
+{t:"Almena",i:"Segmento (7,8)-(8,7)"},
+{t:"Almena",i:"Segmento (8,7)-(9,8)"},
+{t:"Almena",i:"Segmento (9,8)-(10,7)"},
+{t:"Puerta punto",i:"Crear P = (6,0)"},
+{t:"Puerta punto",i:"Crear Q = (8,0)"},
+{t:"Puerta punto",i:"Crear R = (6,4)"},
+{t:"Puerta punto",i:"Crear S = (8,4)"},
+{t:"Puerta",i:"Segmento P-R"},
+{t:"Puerta",i:"Segmento Q-S"},
+{t:"Puerta",i:"Segmento R-S"},
+{t:"Ventana",i:"Crear W1 = (3,5)"},
+{t:"Ventana",i:"Crear W2 = (4,5)"},
+{t:"Ventana",i:"Crear W3 = (3,6)"},
+{t:"Ventana",i:"Crear W4 = (4,6)"},
+{t:"Ventana",i:"Segmento W1-W2"},
+{t:"Ventana",i:"Segmento W3-W4"},
+{t:"Ventana",i:"Segmento W1-W3"},
+{t:"Ventana",i:"Segmento W2-W4"},
+{t:"Ventana",i:"Crear V1 = (10,5)"},
+{t:"Ventana",i:"Crear V2 = (11,5)"},
+{t:"Ventana",i:"Crear V3 = (10,6)"},
+{t:"Ventana",i:"Crear V4 = (11,6)"},
+{t:"Ventana",i:"Segmento V1-V2"},
+{t:"Ventana",i:"Segmento V3-V4"},
+{t:"Ventana",i:"Segmento V1-V3"},
+{t:"Ventana",i:"Segmento V2-V4"},
+{t:"Bandera",i:"Crear T = (12,11)"},
+{t:"Bandera",i:"Segmento (12,10)-(12,11)"},
+{t:"Bandera",i:"Segmento (12,11)-(13,10.5)"}
+]
+
+while(steps.length<50)steps.push({t:"Construcción",i:"Continúa observando la figura."})
+
+let currentStep=0
+
+const stepTitle=document.getElementById("stepTitle")
+const instruction=document.getElementById("instruction")
+const progressText=document.getElementById("progressText")
+const progressFill=document.getElementById("progressFill")
+const stepList=document.getElementById("stepList")
+const scene=document.getElementById("scene")
+
+const prevBtn=document.getElementById("prevBtn")
+const nextBtn=document.getElementById("nextBtn")
+
+const originX=150
+const originY=420
+const scale=35
+
+function X(x){return originX+x*scale}
+function Y(y){return originY-y*scale}
+
+function grid(){
+let g=""
+
+// cuadrícula
+for(let i=0;i<900;i+=scale){
+ g+=`<line x1="${i}" y1="0" x2="${i}" y2="520" stroke="#e5e7eb"/>`
+}
+for(let i=0;i<520;i+=scale){
+ g+=`<line x1="0" y1="${i}" x2="900" y2="${i}" stroke="#e5e7eb"/>`
+}
+
+// ejes
+ g+=`<line x1="0" y1="${originY}" x2="900" y2="${originY}" stroke="#000" stroke-width="2"/>`
+ g+=`<line x1="${originX}" y1="0" x2="${originX}" y2="520" stroke="#000" stroke-width="2"/>`
+
+// números eje X
+for(let i=0;i<=20;i++){
+ let x=X(i)
+ if(x>0 && x<900){
+  g+=`<text x="${x-4}" y="${originY+15}" font-size="12" fill="#000">${i}</text>`
+ }
+}
+
+// números eje Y
+for(let i=0;i<=15;i++){
+ let y=Y(i)
+ if(y>0 && y<520){
+  g+=`<text x="${originX-18}" y="${y+4}" font-size="12" fill="#000">${i}</text>`
+ }
+}
+
+return g
+}
+
+function draw(){
+let s=currentStep+1
+let svg=grid()
+
+function p(x,y){svg+=`<circle cx="${X(x)}" cy="${Y(y)}" r="4" fill="black"/>`}
+function l(x1,y1,x2,y2){svg+=`<line x1="${X(x1)}" y1="${Y(y1)}" x2="${X(x2)}" y2="${Y(y2)}" stroke="black" stroke-width="2"/>`}
+
+if(s>=1)p(0,0)
+if(s>=2)p(14,0)
+if(s>=3)l(0,0,14,0)
+
+if(s>=4)p(0,7)
+if(s>=5)p(14,7)
+if(s>=6)l(0,0,0,7)
+if(s>=7)l(14,0,14,7)
+if(s>=8)l(0,7,14,7)
+
+if(s>=9)p(2,10)
+if(s>=10)l(0,7,2,10)
+if(s>=11)p(4,10)
+if(s>=12)l(2,10,4,10)
+if(s>=13)l(4,10,4,7)
+
+if(s>=14)p(10,10)
+if(s>=15)l(14,7,10,10)
+if(s>=16)p(12,10)
+if(s>=17)l(10,10,12,10)
+if(s>=18)l(12,10,12,7)
+
+if(s>=19)l(4,7,5,8)
+if(s>=20)l(5,8,6,7)
+if(s>=21)l(6,7,7,8)
+if(s>=22)l(7,8,8,7)
+if(s>=23)l(8,7,9,8)
+if(s>=24)l(9,8,10,7)
+
+if(s>=25)p(6,0)
+if(s>=26)p(8,0)
+if(s>=27)p(6,4)
+if(s>=28)p(8,4)
+if(s>=29)l(6,0,6,4)
+if(s>=30)l(8,0,8,4)
+if(s>=31)l(6,4,8,4)
+
+if(s>=32)p(3,5)
+if(s>=33)p(4,5)
+if(s>=34)p(3,6)
+if(s>=35)p(4,6)
+if(s>=36)l(3,5,4,5)
+if(s>=37)l(3,6,4,6)
+if(s>=38)l(3,5,3,6)
+if(s>=39)l(4,5,4,6)
+
+if(s>=40)p(10,5)
+if(s>=41)p(11,5)
+if(s>=42)p(10,6)
+if(s>=43)p(11,6)
+if(s>=44)l(10,5,11,5)
+if(s>=45)l(10,6,11,6)
+if(s>=46)l(10,5,10,6)
+if(s>=47)l(11,5,11,6)
+
+if(s>=48)p(12,11)
+if(s>=49)l(12,10,12,11)
+if(s>=50)l(12,11,13,10.5)
+
+scene.innerHTML=svg
+}
+
+function render(){
+stepTitle.textContent=steps[currentStep].t
+instruction.textContent=steps[currentStep].i
+progressText.textContent=currentStep+1
+progressFill.style.width=((currentStep+1)/50*100)+"%"
+stepList.innerHTML=""
+steps.forEach((s,i)=>{
+let b=document.createElement("button")
+b.textContent=(i+1)
+b.onclick=()=>{currentStep=i;render()}
+if(i===currentStep)b.style.background="#dbeafe"
+stepList.appendChild(b)
+})
+
+draw()
+}
+
+prevBtn.onclick=()=>{if(currentStep>0){currentStep--;render()}}
+nextBtn.onclick=()=>{if(currentStep<49){currentStep++;render()}}
+
+render()
+
+</script>
+</body>
+</html>
 
